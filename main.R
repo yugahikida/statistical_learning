@@ -50,14 +50,15 @@ logi_reg_pred_prob <- logi_reg$finalModel %>%
   predict(test, type = "response")
 
 
+observed <- test$Diagnosis
+
 logi_reg_pred <- tibble(
-  observed = test$Diagnosis,
   prob = logi_reg_pred_prob
 ) %>% mutate(predicted = ifelse(prob >= 0.5, "1", "0"))
   
 
 ## confusion matrix
-table(logi_reg_pred$predicted, logi_reg_pred$observed)
+table(logi_reg_pred$predicted, observed)
 
 ## accuracy
 logi_reg_pred %>%
@@ -77,12 +78,10 @@ logi_reg_ridge_pred <- logi_reg_ridge %>%
   predict(test, type = "prob") %>%
   as_tibble() %>%
   setNames(c("False", "True")) %>%
-  mutate(
-    observed = test$Diagnosis,
-    predicted = ifelse(True >= 0.5, "1", "0"),
-    prob = True)
+  mutate(predicted = ifelse(True >= 0.5, "1", "0"),
+         prob = True)
 
-table(logi_reg_ridge_pred$predicted, logi_reg_ridge_pred$observed)
+table(logi_reg_ridge_pred$predicted, observed)
 
 logi_reg_ridge_pred %>%
   summarise(perc_correct = mean(observed == predicted))
@@ -107,7 +106,6 @@ svm_pred_converted <- svm_model %>% predict(test)
 levels(svm_pred_converted) <- c("0", "1")
 
 svm_pred <- tibble(
-  observed = test$Diagnosis,
   predicted = svm_pred_converted,
   prob = svm_model %>% predict(test, type = "prob")
 )
@@ -115,7 +113,7 @@ svm_pred <- tibble(
 # about probabilistic forecast with SVM 
 # https://stackoverflow.com/questions/63749263/different-results-for-svm-using-caret-in-r-when-classprobs-true
 
-table(svm_pred$predicted, svm_pred$observed)
+table(svm_pred$predicted, observed)
 
 svm_pred %>%
   summarise(perc_correct = mean(observed == predicted))
@@ -130,12 +128,11 @@ gp <- train(Diagnosis ~., data = train,
             tuneLength = 10)
 
 gp_pred <- tibble(
-  observed = test$Diagnosis,
   predicted = gp %>% predict(test),
   prob = gp %>% predict(test, type = "prob")
 )
 
-table(gp_pred$predicted, gp_pred$observed)
+table(gp_pred$predicted, observed)
 
 gp_pred %>%
   summarise(perc_correct = mean(observed == predicted))
