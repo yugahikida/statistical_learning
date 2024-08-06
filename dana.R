@@ -19,17 +19,39 @@ length(unique(d$PatientID)) == dim(d)[1]
 # delete unnecessary columns and do some processing
 d <- d %>% 
   select(- c(DoctorInCharge, PatientID)) %>%
-  mutate(Diagnosis = as.factor(Diagnosis))
+  mutate(Diagnosis = as.factor(Diagnosis)) %>%
+  mutate(value = 1)  %>% spread(Ethnicity, value, fill = 0) %>%
+  rename(Caucasian = "0", African = "1", Asian = "2") %>%
+  select( -c("3"))
 
+# EDA
+## histogram for selected variables 
+df_long <- d %>%
+  select() %>%
+  tidyr::gather(key = "variable", value = "value")
+
+ggplot(df_long, aes(x = value, fill = variable)) +
+  geom_histogram(alpha = 0.5, bins=20) +
+  facet_wrap(~variable, scale = "free") +
+  labs(x = "", y = "", title = "", subtitle = "") +
+  theme(legend.position = "none")
 
 
 # split training data and test date. test data is use to evaluate and 
 # not used for training
-train_size <- floor(0.9 * nrow(d))
-train_id <- sample(seq_len(nrow(d)), size = train_size)
+# train_size <- floor(0.9 * nrow(d))
+# train_id <- sample(seq_len(nrow(d)), size = train_size)
 
-train <- d[train_id, ]
-test <- d[-train_id, ]
+# train <- d[train_id, ]
+# test <- d[-train_id, ]
+
+# save train data and test data such that we are using same set of data.
+saveRDS(train, "data/train.rds")
+saveRDS(test, "data/test.rds")
+
+readRDS("data/train.rds")
+readRDS("data/test.rds")
+
 
 # we use CV for all estimation
 trctrl <- trainControl(method = "cv", number = 10)
@@ -88,6 +110,3 @@ logi_reg_ridge_pred %>%
 
 ## value of lambda
 logi_reg_ridge$bestTune
-
-
-# (2.5) Polynomial regression?
